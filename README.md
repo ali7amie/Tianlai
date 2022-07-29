@@ -1,5 +1,5 @@
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ali7amie/Tianlai-M2-Internship-/blob/master/source_finder.ipynb
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://github.com/ali7amie/Tianlai-M2-Internship-/blob/master/source_finder.ipynb
 )
 
 
