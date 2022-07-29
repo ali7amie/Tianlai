@@ -1,4 +1,4 @@
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-O3SvIXnQVdmhNXb-1T26EH5AcQEOTWB]
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-O3SvIXnQVdmhNXb-1T26EH5AcQEOTWB/]
 
 
 https://colab.research.google.com/drive/1-O3SvIXnQVdmhNXb-1T26EH5AcQEOTWB <br>
