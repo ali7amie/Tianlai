@@ -290,7 +290,7 @@ class src_finder:
         
 
         #compute barycenter coordinates if the centre of the imgae is the origin
-        self.bar_center=convert_map_index.convert_upper_to_center([self.barycenter_list[:,0],self.barycenter_list[:,1]],np.shape(self.rectmap)[0],len(self.barycenter_list[0]))[4]
+        self.bar_center=convert_map_index.convert_upper_to_center([self.barycenter_list[:,0],self.barycenter_list[:,1]],np.shape(self.rectmap)[0],len(self.barycenter_list[:,0]))[4]
 
 
         #compute the world coordinate of barycenters
