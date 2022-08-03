@@ -28,7 +28,8 @@
     #return (rectmap,catalog)
     
 
-
+import numpy as np
+import pandas as pd
 import create_gaussian_src
 import convert_map_index
 import pixel2world

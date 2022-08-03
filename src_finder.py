@@ -1,16 +1,19 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import healpy as hp
+import pandas as pd
 import create_map
 import global_bg_estimation
 import detection_kernels
 import sort_signal_to_noise
 import hierarchical_merging
-import compute_barycenter
+import compute_barycenters
 import ploting_test
 import compute_flux
 import pixel2world
 import convert_map_index
+import convolution_maps
+import detection_criteria
 import sys
 
 
@@ -56,7 +59,7 @@ class src_finder:
     '''
 
 
-    def __init__(self,use,detection_kernels_size,n,aperture,fits_filename='',map_size=80,map_resolution=18,projection_center=(90,180),noise=0.001,src_number=10,src_size=7,src_std=1.2,flux=1,freq=1300):
+    def __init__(self,use,detection_kernels_size,n,aperture,fits_filename,map_size,map_resolution,projection_center,noise,src_number,src_size,src_std,flux,freq):
 
         self.use = use
         self.detection_kernels_size = detection_kernels_size
@@ -73,9 +76,9 @@ class src_finder:
         self.freq = freq
             
         if self.use == 'python':
-            self.simulated_map=create_map.create_map(self.map_size,self.src_number,self.src_size,self.src_std,self.flux,self.noise)
-            self.rectmap=self.simulated_map[0]
-            self.simulated_catalog=self.simulated_map[1]
+            self.simulation=create_map.create_map(self.map_size,self.src_number,self.src_size,self.src_std,self.flux,self.noise,self.freq,self.map_resolution,self.projection_center)
+            self.rectmap=self.simulation[0]
+            self.simulation_dataframe=self.simulation[1]
 
         if self.use == 'JSkyMap':
             #create the instance, read a fits file, transform a spherical map into bumpy, extract a gnomonic projection.
@@ -84,68 +87,218 @@ class src_finder:
             self.rectmap=hp.gnomview(self.spherical_map,rot=[self.projection_center[0],self.projection_center[1]],reso=self.map_resolution,xsize=self.map_size,ysize=self.map_size,return_projected_map=True,no_plot=True)
             #??????????????????? here you should import the txt file  catalog in case of jskymap
     
-        #global background estimation, with and without clipping   
-        self.global_bg_stat=global_bg_estimation.global_bg_estimation(self.rectmap)
- 
-        # create the 3 detection kernels + statistics of the peripheric kernel
-        self.detection_tools=detection_kernels.create(self.rectmap,self.detection_kernels_size)
 
-        # set the detection criteria
-        self.detected_src_coor_upper_pixcorner = detection_kernels.set_detection_criteria(self.detection_tools,self.n,self.global_bg_stat[1])
+
+
+
+
+        #global background estimation
+        #------------------------------
+        #This step use the function global_bg_bestimation from the file global_bg_estimation.py
+        '''
+        This function take a map and give its background parameters ( med?? clipping??)
+
+        parameters
+        -----------
+        map : 2D numpy array
+
+        Return
+        -------
+        statistics : tuple
+                    (map_median,map_std)
+        '''   
+        self.global_stat = global_bg_estimation.global_bg_estimation(self.rectmap)
+
+
+
+
+
+  
+        # Creating the three detection kernels
+        #------------------------------------------
+        #This step use the function create_kernels from the file detection_kernels.py
+        ''' 
+        This function take the size of kernels and give the kernels 
+
+        parameters
+        -------------
+        detection_kernels_size: tuple   (int, int, int)
+                                (size of central kernel, size of intermediate kernel, size of peripherical kernel) 
+                                           
+        Return
+        -------
+        kernels: tuple (2D NumPy array, 2D NumPy array, 2D NumPy array)
+                           (central_kernel, intermediate_kernel, peripherical_kernel)                 
+        '''
+
+        self.kernels = detection_kernels.create_kernels(self.detection_kernels_size)
+
+
+
+
+
+
+        #Compute convolution maps
+        #--------------------------------
+        #This step use the function conv_maps from the file convolution_maps.py
+
+        ''' This function take three kernels, build additional two kernels, and then give convolution maps of 5 kernels
+    
+        parameters
+        ------------
+        kernels: tuple (2D NumPy array, 2D NumPy array, 2D NumPy array)
+                       (central kernel, intermediate kernel, peripherical kernel)
+             
+        detection_kernels_size: tuple
+                               (size of central kernel, size of intermediate kernel, size of peripherical kernel)
+
+        rectmap: 2D NumPy array
+                 the main map
+
+        Return
+        --------
+        Convolution maps: tuple  (2D NumPy array, 2D NumPy array, 2D NumPy array, 2D NumPy array, 2D NumPy array)
+                                 (Convolution with central kernel map, Convolution with intermediate kernel map, Convolution with peripherical kernel map (local average), Convolution with peripherical kernel map (local median), Convolution with peripherical kernel map (local std))                       
+        '''
+
+        self.conv_maps=convolution_maps.create_conv_maps(self.kernels,self.detection_kernels_size,self.rectmap)
+
+
+
+
+
+
+
+        #Execute the detection
+        #-----------------------------
+        #This step use the function detection from the file detection_criteria.py
+
+        ''' This function take convolution maps, manipulate them within detection criteria, 
+        and return list of pixels that belong to potential sources and their amplitude. It is sorted by the S/N ratio
+
+        parameters:
+        -------------
+        conv_maps: tuple (2D NumPy array, 2D NumPy array, 2D NumPy array, 2D NumPy array, 2D NumPy array)
+                         (Convolution with central kernel map, Convolution with intermediate kernel map, Convolution with peripherical kernel map (local average), Convolution with peripherical kernel map (local median), Convolution with peripherical kernel map (local std))                       
+  
+        n: int
+           The detection threshold 
+       
+        Return:
+        -------  
+        sorted_raw_detection: dataframe 
+                              all pixels verifying detection criteria sorted by their decreasing S/N ratio
+        '''
+        
+        self.sorted_raw_detection = detection_criteria.detection(self.conv_maps,self.n,self.rectmap,self.global_stat)
+
+
+
+
 
         # resolving the no detection case
-        if len(self.detected_src_coor_upper_pixcorner[0])!=0:
-            self.no_detection=False
-        else:
-            self.no_detection=True
+       # if len(self.detected_src_coor_upper_pixcorner[0])!=0:
+        #    self.no_detection=False
+        #else:
+         #   self.no_detection=True
             
-        
 
-    def create_catalog(self):
+            
 
-        #compute the noise map of signal to noise 
-        self.signal_to_noise_results = sort_signal_to_noise.compute_signal_to_noise_results(self.detection_tools,self.detected_src_coor_upper_pixcorner,self.rectmap)
+
+
+
+        #clustering pixels into sources
+        #-------------------------------
+        #This step use the function merging from the file hierarchical_merging.py
+
+        ''' This function take an aperture, and the dataframe of all detections'pixels and give a list where each element represent itself a list of indexes contributing to a single sources
+
+        parameters:
+        -------------
+        aperture: tuple (float,float)
+                  (3,2.5)  
+        sorted_raw_detection: dataframe 
+                              all pixels verifying detection criteria sorted by their decreasing S/N ratio
+       
+        Return:
+        -------  
+        all_agglomerations_index: list
+                                  a list where each element represent itself a list of indexes contributing to a single sources
+        '''
+
+        self.all_agglomerations_index=hierarchical_merging.merging(self.aperture,self.sorted_raw_detection)
+
+
+
+
+
+
+        #compute barycenters
+        #----------------------
+        # This step use the function compute_barycenters from the file compute_barycenters.py
+
+        ''' This function take the main dataframe and the list of pixels goups, and compute a list of barycenters 
+
+        parameters:
+        -------------
+        sorted_raw_detection: dataframe 
+                              all pixels verifying detection criteria sorted by their decreasing S/N ratio
+       
+        all_agglomerations_index: list
+                                  a list where each element represent itself a list of indexes contributing to a single sources
+
+        Return:
+        -------   
+        barycenter_list:   tuples list     (2 x source number) 
+                          each line present (vertical coor, horizontal coor)                 
+        '''
+
+        self.barycenter_list = compute_barycenters.compute_barycenters(self.sorted_raw_detection,self.all_agglomerations_index)
+
+
+        #compute fluxes
+        #------------------
+        #This step use the function compute_flux from the file compute_flux.py
+
+        ''' This function take the the convolution maps, the kernels size, the list of barycenters and the frequency, to compute a list of fluxes density in Kelvin and in Jansky
     
-        #hierarchical merging of neighbours pixels to form sources
-        self.all_agglomerations = hierarchical_merging.hierarchical_merging(self.signal_to_noise_results[2],self.aperture)
+        parameters:
+        -------------
 
-        #compyte barycenters 
-        self.barycenter_list=compute_barycenter.compute_barycenter(self.signal_to_noise_results[1],self.all_agglomerations)
+        detection_kernels_size: tuple
+                                (size of central kernel, size of intermediate kernel, size of peripherical kernel)
+
+        barycenter_list:   tuples list     (2 x source number) 
+                          each line present (vertical coor, horizontal coor) 
+                       
+        conv_maps: tuple
+                  (avg central map (ndarray), avg intermediate map (ndarray), avg peripherical map (ndarray), median peripherical map (ndarray), std peripherical map (ndarray))
+                                      
+        freq: float
+              the frequency of signal in hertz
+
+
+        Return:
+        -------   
+       flux_list:   tuples    (list,list) 
+                       list of fluxes in kelvin and in Jansky                
+        '''
+
+        self.flux_list=compute_flux.compute_flux(self.detection_kernels_size, self.barycenter_list, self.conv_maps, self.rectmap, self.freq)
 
         
-            # compute flux
-        self.flux_list=compute_flux.create_integration_kernel(self.rectmap,self.detection_kernels_size,self.detection_tools,self.barycenter_list)
+
+        #compute barycenter coordinates if the centre of the imgae is the origin
+        self.bar_center=convert_map_index.convert_upper_to_center([self.barycenter_list[:,0],self.barycenter_list[:,1]],np.shape(self.rectmap)[0],len(self.barycenter_list[0]))[4]
 
 
-        #convert upper to center
-        self.simulated_coor_center=convert_map_index.convert_upper_to_center( [ self.simulated_catalog[:,0],self.simulated_catalog[:,1] ] , np.shape(self.rectmap)[0],len(self.simulated_catalog[:,0]) )[4]
-        self.coor_center=convert_map_index.convert_upper_to_center(self.detected_src_coor_upper_pixcorner,np.shape(self.rectmap)[0],len(self.detected_src_coor_upper_pixcorner[0]))[4]
-        self.bar_center=convert_map_index.convert_upper_to_center([self.barycenter_list[:,1],self.barycenter_list[:,0]],np.shape(self.rectmap)[0],len(self.barycenter_list[0]))[4]
-
-
-
-        #convert pixel to world coordinate
+        #compute the world coordinate of barycenters
         self.barycenter_list_world=pixel2world.pixel2world(self.projection_center,self.map_resolution,self.bar_center)
-        self.simulated_src_world=pixel2world.pixel2world(self.projection_center,self.map_resolution,self.simulated_coor_center)
 
-        #final catalog
-        self.final_catalog=np.transpose((self.barycenter_list_world[:,0],self.barycenter_list_world[:,1],self.flux_list[1]))
-        a=np.argsort(self.final_catalog[:,0])
-        self.final_catalog=self.final_catalog[a]
-        self.final_catalog=np.column_stack( ( range(0,len(self.final_catalog)) , self.final_catalog ))
-
-        self.simulated_final_catalog=np.transpose((self.simulated_src_world[:,0],self.simulated_src_world[:,1],self.simulated_catalog[:,2]))
-        b=np.argsort(self.simulated_final_catalog[:,0])
-        self.simulated_final_catalog=self.simulated_final_catalog[b]
-        self.simulated_final_catalog=np.column_stack( ( range(0,len(self.simulated_final_catalog)) , self.simulated_final_catalog ))
-
-
-
-    def plot(self):
-        ploting_test.ploting_test(self.rectmap,self.coor_center,self.bar_center,self.simulated_coor_center)
-
-
-        
-        
-        
+        #set up a final detection dataframe
+        detection_catalog=np.column_stack((self.barycenter_list_world[:,1],self.barycenter_list_world[:,0],self.barycenter_list[:,1],self.barycenter_list[:,0],self.bar_center[:,1],self.bar_center[:,0],self.flux_list[0],self.flux_list[1]))
+        detection_dataframe=pd.DataFrame(detection_catalog,columns=['dec[deg]','ra[deg]','horizontal coor','vertical coor','vertical center','horizontal center','flux [K]','flux[Jy]'])
+        sorter=np.flip(np.argsort(detection_dataframe['dec[deg]']))
+        self.sorted_detection_dataframe = detection_dataframe.iloc[sorter]
 

@@ -1,16 +1,38 @@
 import numpy as np
 
-def hierarchical_merging(table,aperture): #aperture is a list of (limit, aperture) limit for rectangular, aperture for circular
+def merging(aperture,sorted_raw_detection):
+
+
+    ''' This function take an aperture, and the dataframe of all detections'pixels and give a list where each element represent itself a list of indexes contributing to a single sources
+
+    parameters:
+    -------------
+    aperture: tuple (float,float)
+               (3,2.5)  
+    sorted_raw_detection: dataframe 
+                          all pixels verifying detection criteria sorted by their decreasing S/N ratio
+       
+    Return:
+    -------  
+    all_agglomerations_index: list
+                              a list where each element represent itself a list of indexes contributing to a single sources
+    '''
+        
+
+    id=sorted_raw_detection.index
     all_agglomerations_index=[]
-    for i in range(0,len(table[:,0])):
-        if table[:,5][i]==0:
+    for i in id:
+        if sorted_raw_detection['Flag'][i]==0:
             pixels_index_in_each_src=[]
-            for j in range(0,len(table[:,0])):
-                if ( table[:,3][j] >= table[:,3][i]-aperture[0] ) and ( table[:,3][j] <= table[:,3][i]+aperture[0] ) and  ( table[:,4][j] >= table[:,4][i]-aperture[0] ) and ( table[:,4][j] <= table[:,4][i]+aperture[0] ):
-                    offset=np.sqrt( ( table[:,3][i] - table[:,3][j] )**2 + (table[:,4][i] - table[:,4][j])**2 )
+            for j in id:
+                c1=sorted_raw_detection['vertical coor'][j] >= sorted_raw_detection['vertical coor'][i] - aperture[0] 
+                c2=sorted_raw_detection['vertical coor'][j] <= sorted_raw_detection['vertical coor'][i] + aperture[0] 
+                c3=sorted_raw_detection['horizontal coor'][j] >= sorted_raw_detection['horizontal coor'][i] - aperture[0]
+                c4=sorted_raw_detection['horizontal coor'][j] <= sorted_raw_detection['horizontal coor'][i] + aperture[0]
+                if (c1 and c2 and c3 and c4):
+                    offset = np.sqrt( ( sorted_raw_detection['vertical coor'][i] - sorted_raw_detection['vertical coor'][j] )**2 + ( sorted_raw_detection['horizontal coor'][i] - sorted_raw_detection['horizontal coor'][j] )**2 )
                     if offset<=aperture[1]:
-                        pixels_index_in_each_src.append(int(table[:,0][j]))
-                        table[:,5][j]=1
+                        pixels_index_in_each_src.append(j)
+                        sorted_raw_detection['Flag'][j]=1
             all_agglomerations_index.append(pixels_index_in_each_src)
-            
-    return np.transpose(( np.arange(0,len(all_agglomerations_index)), all_agglomerations_index))
+    return all_agglomerations_index
