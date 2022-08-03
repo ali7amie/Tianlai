@@ -1,3 +1,4 @@
+import numpy as np
 
 def compute_flux(detection_kernels_size, barycenter_list, conv_maps, rectmap, freq):
 
