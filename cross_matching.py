@@ -111,10 +111,10 @@ def cross_matching(detection_catalog,simulated_catalog,matching_aperture,max_dis
 
             c1 = detection_catalog['dec[deg]'][i] >= (simulated_catalog['dec[deg]'][j] - matching_aperture) 
             c2 = detection_catalog['dec[deg]'][i] <= (simulated_catalog['dec[deg]'][j] + matching_aperture) 
-            
-            if c1 and c2:
-                offset=angular_dist(detection_catalog['ra[deg]'][i],detection_catalog['dec[deg]'][j],simulated_catalog['ra[deg]'][i],simulated_catalog['dec[deg]'][j])
 
+            if c1 and c2:
+                offset = angular_dist(detection_catalog['ra[deg]'][i], detection_catalog['dec[deg]'][i], simulated_catalog['ra[deg]'][j], simulated_catalog['dec[deg]'][j])
+            
                 #within this disk compute angular distance, and if it is smaller than max_distance, we consider a matching case
 
                 c3 = offset <= max_distance
@@ -126,7 +126,7 @@ def cross_matching(detection_catalog,simulated_catalog,matching_aperture,max_dis
                     matches.append((i, detection_catalog['ra[deg]'][i], detection_catalog['dec[deg]'][i],j , simulated_catalog['ra[deg]'][j],	simulated_catalog['dec[deg]'][j], offset))
                 else:
                     no_matches.append((i, detection_catalog['ra[deg]'][i], detection_catalog['dec[deg]'][i]))
-
+    #set up the output
     matches_dataframe = pd.DataFrame(matches,columns=['idx src from det', 'ra1[deg]', 'dec1[deg]','idx src from sim', 'ra2[deg]', 'dec2[deg]', 'offset'])                 
     no_matches_dataframe = pd.DataFrame(no_matches,columns=['idx src from det', 'ra1[deg]', 'dec1[deg]'])
 
