@@ -297,8 +297,8 @@ class src_finder:
         self.barycenter_list_world=pixel2world.pixel2world(self.projection_center,self.map_resolution,self.bar_center)
 
         #set up a final detection dataframe
-        detection_catalog=np.column_stack((self.barycenter_list_world[:,1],self.barycenter_list_world[:,0],self.barycenter_list[:,1],self.barycenter_list[:,0],self.bar_center[:,1],self.bar_center[:,0],self.flux_list[0],self.flux_list[1]))
-        detection_dataframe=pd.DataFrame(detection_catalog,columns=['dec[deg]','ra[deg]','horizontal coor','vertical coor','vertical center','horizontal center','flux [K]','flux[Jy]'])
+        detection_catalog=np.column_stack((self.barycenter_list_world[:,0],self.barycenter_list_world[:,1],self.barycenter_list[:,1],self.barycenter_list[:,0],self.bar_center[:,1],self.bar_center[:,0],self.flux_list[0],self.flux_list[1]))
+        detection_dataframe=pd.DataFrame(detection_catalog,columns=['ra[deg]', 'dec[deg]','horizontal coor','vertical coor','vertical center','horizontal center','flux [K]','flux[Jy]'])
         sorter=np.flip(np.argsort(detection_dataframe['dec[deg]']))
         self.sorted_detection_dataframe = detection_dataframe.iloc[sorter]
 
