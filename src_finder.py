@@ -315,7 +315,7 @@ class src_finder:
         self.efficiency = len(self.matching_results[0])/len(self.simulation[1])
 
         #compute spurious detection
-        self.spurious_detection = ( len(self.sorted_detection_dataframe)- len(self.matching_results[0]) )/len(self.simulation[1])
+        self.spurious_detection = ( len(self.sorted_detection_dataframe)- len(self.matching_results[0]) )/len(self.sorted_detection_dataframe)
 
         
 
