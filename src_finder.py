@@ -14,6 +14,7 @@ import pixel2world
 import convert_map_index
 import convolution_maps
 import detection_criteria
+import cross_matching
 import sys
 
 
@@ -301,4 +302,18 @@ class src_finder:
         detection_dataframe=pd.DataFrame(detection_catalog,columns=['ra[deg]', 'dec[deg]','horizontal coor','vertical coor','vertical center','horizontal center','flux [K]','flux[Jy]'])
         sorter=np.flip(np.argsort(detection_dataframe['dec[deg]']))
         self.sorted_detection_dataframe = detection_dataframe.iloc[sorter]
+        
+        
+        
+
+        self.matching_results = cross_matching.cross_matching(self.sorted_detection_dataframe[['ra[deg]', 'dec[deg]', 'flux[Jy]']], self.simulation[1][['ra[deg]', 'dec[deg]', 'flux[Jy]']],self.matching_aperture,self.max_distance)
+
+
+        #compute efficiency
+        self.efficiency = len(self.matching_results[0])/len(self.simulation[1])
+
+        #compute spurious detection
+        self.spurious_detection = ( len(self.sorted_detection_dataframe)- len(self.matching_results[0]) )/len(self.simulation[1])
+
+        
 
