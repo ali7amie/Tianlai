@@ -60,7 +60,7 @@ class src_finder:
     '''
 
 
-    def __init__(self,use,detection_kernels_size,n,aperture,fits_filename,map_size,map_resolution,projection_center,noise,src_number,src_size,src_std,flux,freq):
+    def __init__(self,use,detection_kernels_size,n,aperture,fits_filename,map_size,map_resolution,projection_center,noise,src_number,src_size,src_std,flux,freq,matching_aperture,max_distance):
 
         self.use = use
         self.detection_kernels_size = detection_kernels_size
@@ -75,6 +75,8 @@ class src_finder:
         self.src_std = src_std
         self.flux = flux
         self.freq = freq
+        self.matching_aperture = matching_aperture
+        self.max_distance = max_distance
             
         if self.use == 'python':
             self.simulation=create_map.create_map(self.map_size,self.src_number,self.src_size,self.src_std,self.flux,self.noise,self.freq,self.map_resolution,self.projection_center)
