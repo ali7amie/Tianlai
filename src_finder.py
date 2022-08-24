@@ -94,7 +94,7 @@ class src_finder:
 
 
         def set_max_distance(self,max_distance):
-        self.max_distance=max_distance
+            self.max_distance=max_distance
 
 
 
