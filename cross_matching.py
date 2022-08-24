@@ -109,23 +109,27 @@ def cross_matching(detection_catalog,simulated_catalog,matching_aperture,max_dis
 
             #reduce the search area to a disk of radius matching_aperture around each source
 
-            c1 = (simulated_catalog['dec[deg]'][j] - matching_aperture) <=  detection_catalog['dec[deg]'][i]
-            c2 = (simulated_catalog['dec[deg]'][j] + matching_aperture) >= detection_catalog['dec[deg]'][i]
+            #c1 = (simulated_catalog['dec[deg]'][j] - matching_aperture) <=  detection_catalog['dec[deg]'][i]
+            #c2 = (simulated_catalog['dec[deg]'][j] + matching_aperture) >= detection_catalog['dec[deg]'][i]
 
-            if c1 and c2:
-                offset = angular_dist(detection_catalog['ra[deg]'][i], detection_catalog['dec[deg]'][i], simulated_catalog['ra[deg]'][j], simulated_catalog['dec[deg]'][j])
+            #if c1 and c2:
+            offset = angular_dist(detection_catalog['ra[deg]'][i], detection_catalog['dec[deg]'][i], simulated_catalog['ra[deg]'][j], simulated_catalog['dec[deg]'][j])
             
                 #within this disk compute angular distance, and if it is smaller than max_distance, we consider a matching case
 
-                c3 = offset <= max_distance
+            c3 = offset <= max_distance
                 #c4 = detection_catalog['flux[Jy]'][i] >= 0.7 * simulated_catalog['flux[Jy]'][j]
                 #c5 = detection_catalog['flux[Jy]'][i] <= 1.3 * simulated_catalog['flux[Jy]'][j]
                 #if c3 and c4 and c5:
-                if c3:
+            if c3:
+                min_offset=offset
+                closest_j=j
+        if (min_offset):
+                    
                 #create a matching results dataframes  
-                    matches.append((i, detection_catalog['ra[deg]'][i], detection_catalog['dec[deg]'][i],j , simulated_catalog['ra[deg]'][j],	simulated_catalog['dec[deg]'][j], offset))
-                else:
-                    no_matches.append((i, detection_catalog['ra[deg]'][i], detection_catalog['dec[deg]'][i]))
+            matches.append((i, detection_catalog['ra[deg]'][i], detection_catalog['dec[deg]'][i],j , simulated_catalog['ra[deg]'][j],	simulated_catalog['dec[deg]'][j], offset))
+        else:
+            no_matches.append((i, detection_catalog['ra[deg]'][i], detection_catalog['dec[deg]'][i]))
     #set up the output
     matches_dataframe = pd.DataFrame(matches,columns=['idx src from det', 'ra1[deg]', 'dec1[deg]','idx src from sim', 'ra2[deg]', 'dec2[deg]', 'offset'])                 
     no_matches_dataframe = pd.DataFrame(no_matches,columns=['idx src from det', 'ra1[deg]', 'dec1[deg]'])
