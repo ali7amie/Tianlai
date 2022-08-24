@@ -127,7 +127,7 @@ def cross_matching(detection_catalog,simulated_catalog,matching_aperture,max_dis
         if (min_offset):
                     
                 #create a matching results dataframes  
-            matches.append((i, detection_catalog['ra[deg]'][i], detection_catalog['dec[deg]'][i],j , simulated_catalog['ra[deg]'][j],	simulated_catalog['dec[deg]'][j], offset))
+            matches.append((i, detection_catalog['ra[deg]'][i], detection_catalog['dec[deg]'][i],closest_j , simulated_catalog['ra[deg]'][closest_j],	simulated_catalog['dec[deg]'][closest_j], min_offset))
         else:
             no_matches.append((i, detection_catalog['ra[deg]'][i], detection_catalog['dec[deg]'][i]))
     #set up the output
