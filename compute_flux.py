@@ -3,7 +3,7 @@ import scipy.ndimage as nd
 import k2jansky
 
 
-def compute_flux(detection_kernels_size, barycenter_list, conv_maps, rectmap, freq):
+def compute_flux(detection_kernels_size, barycenter_list, conv_maps, rectmap, freq, global_stat, max_baseline):
 
     ''' This function take the the convolution maps, the kernels size, the list of barycenters and the frequency, to compute a list of fluxes density in Kelvin and in Jansky
     
@@ -26,14 +26,14 @@ def compute_flux(detection_kernels_size, barycenter_list, conv_maps, rectmap, fr
     Return:
     -------   
     flux_list:   tuples    (list,list) 
-                  list of fluxes in kelvin and in Jansky                
+                       list of fluxes in kelvin and in Jansky                
     '''
-
     flux_integration_kernel=np.ones((detection_kernels_size[2],detection_kernels_size[2]))
     flux_map=nd.convolve(rectmap,flux_integration_kernel)-(detection_kernels_size[2]**2)*conv_maps[3]  # what to do with negative median - use farer and thiner ring
     #coor=np.transpose((barycenter_list[0],barycenter_list[1]))
-    coor=( barycenter_list[:,1] , barycenter_list[:,0] )
+    coor=( barycenter_list[:,0] , barycenter_list[:,1] )
+    amp_list=rectmap[coor]- global_stat[0]
     flux_list_k=flux_map[coor]
-    flux_list_jansky=k2jansky.k2jansky('freq',freq,16.5,1,flux_list_k)
+    flux_list_jansky=k2jansky.k2jansky(use='freq',freq=freq,max_baseline=max_baseline,beam_surface=274*10**(-7),density_k=flux_list_k)
     
-    return (flux_list_k,flux_list_jansky)
+    return (flux_list_k,flux_list_jansky,amp_list)
