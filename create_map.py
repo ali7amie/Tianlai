@@ -1,35 +1,5 @@
-#import numpy as np
-#import create_gaussian_src
-#from photutils.datasets import make_noise_image
-
-
-#def create_map(map_size,src_number,src_size,src_std,src_flux_jansky,noise_std):
- #   """ This function create a map as a 2D Numpy array, enter map_size,src_number,src_size,src_std,src_flux_jansky,noise_std"""
-
-    #create empty map
-  #  rectmap=np.zeros((map_size,map_size))
-
-    #create a gaussian source
-   # src=create_gaussian_src.create_gaussian_src(src_size,src_std,src_flux_jansky)
-
-    #add src_number source to with random position, but with 2*src_size distant from the boundary.
-    #x=np.random.random_integers(low=2*src_size,high=map_size-2*src_size,size=src_number)
-    #y=np.random.random_integers(low=2*src_size,high=map_size-2*src_size,size=src_number) #generate random position, note that x and y here represent a matrix like coordinate, so the number of column or absice is y, the number of row or ordonnée is x
-
-    
-    
-    #for i in range(0,len(x)):
-     #       rectmap[y[i]-(src_size//2):y[i]+((src_size//2)+1),x[i]-(src_size//2):x[i]+((src_size//2)+1)]=src
-    
-    #add gaussian noise
-    #noise =  make_noise_image((map_size,map_size), distribution='gaussian', mean=0,stddev=noise_std)
-    #rectmap=rectmap+noise
-    #catalog=np.transpose((y,x,src_flux_jansky*np.ones_like(x)))#upper pix_center, pix center to index. pix corner ??? plot??    
-    #return (rectmap,catalog)
-    
-
-import numpy as np
 import pandas as pd
+import numpy as np
 import create_gaussian_src
 import convert_map_index
 import pixel2world
@@ -37,7 +7,7 @@ from photutils.datasets import make_noise_image
 
 
 
-def create_map(map_size,src_number,src_size,src_std,src_flux_jansky,noise_std,freq,map_resolution,projection_center):
+def create_map(map_size,src_number,src_size,src_std,src_flux_jansky,noise_std,freq,map_resolution,projection_center,max_baseline):
 
     ''' This function simulate a gnomonic projection of a sky map with a given field of view and center of projection center. I take many parameters and gives the map and a detailed dataframe about its components  
     It use Pandas, the function create_gaussian_src from the file create_gaussian_src.py, the function convert_upper_to_center from the file convert_map_index.py, and the function pixel2world from the file pixel2world.py
@@ -72,7 +42,7 @@ def create_map(map_size,src_number,src_size,src_std,src_flux_jansky,noise_std,fr
     rectmap=np.zeros((map_size,map_size))
 
     #create a gaussian source with the entered parameters
-    src=create_gaussian_src.create_gaussian_src(src_size,src_std,src_flux_jansky,freq)
+    src=create_gaussian_src.create_gaussian_src(src_size,src_std,src_flux_jansky,freq,max_baseline)
 
     #turn on src_number pixels randomely, to limit the boundary effect source are generated far from boudndaries 
     horizontal_coor=np.random.random_integers(low=2*src_size,high=map_size-2*src_size,size=src_number)
@@ -95,13 +65,13 @@ def create_map(map_size,src_number,src_size,src_std,src_flux_jansky,noise_std,fr
     world_coor=pixel2world.pixel2world(projection_center,map_resolution,coor_center)
 
       # setup the dataframe
-    data=np.column_stack((world_coor[:,0],world_coor[:,1],vertical_coor,horizontal_coor,coor_center[:,0],coor_center[:,1],src[1]*np.ones(len(vertical_coor)),src[2]*np.ones(len(vertical_coor))))
-    simulation_dataframe=pd.DataFrame(data,columns=['ra[deg]','dec[deg]','vertical coor[pixel]','horizontal coor[pixel]','vertical center','horizontal center','flux [K]','flux[Jy]'])
+    data=np.column_stack((world_coor[:,0],world_coor[:,1],vertical_coor,horizontal_coor,coor_center[:,1],coor_center[:,0],src[3]*np.ones(len(vertical_coor)),src[1]*np.ones(len(vertical_coor)),src[2]*np.ones(len(vertical_coor)),noise_std*np.ones(len(vertical_coor))))
+    simulation_dataframe=pd.DataFrame(data,columns=['ra[deg]','dec[deg]','vertical coor[pixel]','horizontal coor[pixel]','vertical center','horizontal center','amp [K]','flux [K]','flux[Jy]','noise std[K]'])
 
       # sort the dataframe in decreasing declination, this is useful for catalogs matching
     sorter=np.flip(np.argsort(simulation_dataframe['dec[deg]']))
     sorted_simulation_dataframe = simulation_dataframe.iloc[sorter] 
 
     return (rectmap,sorted_simulation_dataframe)
-    
-    
+
+
