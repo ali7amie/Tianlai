@@ -105,6 +105,7 @@ def cross_matching(detection_catalog,simulated_catalog,matching_aperture,max_dis
     idd=detection_catalog.index
     ids=simulated_catalog.index
     for i in idd:
+        min_offset=None
         for j in ids:
 
             #reduce the search area to a disk of radius matching_aperture around each source
@@ -124,7 +125,7 @@ def cross_matching(detection_catalog,simulated_catalog,matching_aperture,max_dis
             if c3:
                 min_offset=offset
                 closest_j=j
-        if (min_offset):
+        if (min_offset!=None):
                     
                 #create a matching results dataframes  
             matches.append((i, detection_catalog['ra[deg]'][i], detection_catalog['dec[deg]'][i],closest_j , simulated_catalog['ra[deg]'][closest_j],	simulated_catalog['dec[deg]'][closest_j], min_offset))
