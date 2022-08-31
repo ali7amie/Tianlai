@@ -60,7 +60,7 @@ class src_finder:
     '''
 
 
-    def __init__(self,use,detection_kernels_size,n,aperture,fits_filename,map_size,map_resolution,projection_center,noise,src_number,src_size,src_std,flux,freq,matching_aperture,max_distance):
+    def __init__(self,use,detection_kernels_size,n,aperture,fits_filename,map_size,map_resolution,projection_center,noise,src_number,src_size,src_std,flux,freq,matching_aperture,max_distance,max_baseline):
 
         self.use = use
         self.detection_kernels_size = detection_kernels_size
@@ -77,9 +77,10 @@ class src_finder:
         self.freq = freq
         self.matching_aperture = matching_aperture
         self.max_distance = max_distance
+        self.max_baseline = max_baseline
             
         if self.use == 'python':
-            self.simulation=create_map.create_map(self.map_size,self.src_number,self.src_size,self.src_std,self.flux,self.noise,self.freq,self.map_resolution,self.projection_center)
+            self.simulation=create_map.create_map(self.map_size,self.src_number,self.src_size,self.src_std,self.flux,self.noise,self.freq,self.map_resolution,self.projection_center,self.max_baseline)
             self.rectmap=self.simulation[0]
             self.simulation_dataframe=self.simulation[1]
 
@@ -91,12 +92,17 @@ class src_finder:
             #??????????????????? here you should import the txt file  catalog in case of jskymap
     
 
+    def set_detection_kernels_size(self,detection_kernels_size):
+        self.detection_kernels_size = detection_kernels_size
 
 
-        def set_max_distance(self,max_distance):
-            self.max_distance=max_distance
+    def set_aperture(self,aperture):
+        self.aperture = aperture
 
 
+        
+
+    def execute(self):
 
         #global background estimation
         #------------------------------
@@ -291,7 +297,7 @@ class src_finder:
                        list of fluxes in kelvin and in Jansky                
         '''
 
-        self.flux_list=compute_flux.compute_flux(self.detection_kernels_size, self.barycenter_list, self.conv_maps, self.rectmap, self.freq)
+        self.flux_list=compute_flux.compute_flux(self.detection_kernels_size, self.barycenter_list, self.conv_maps, self.rectmap, self.freq, self.global_stat, self.max_baseline)
 
         
 
@@ -303,13 +309,23 @@ class src_finder:
         self.barycenter_list_world=pixel2world.pixel2world(self.projection_center,self.map_resolution,self.bar_center)
 
         #set up a final detection dataframe
-        detection_catalog=np.column_stack((self.barycenter_list_world[:,0],self.barycenter_list_world[:,1],self.barycenter_list[:,1],self.barycenter_list[:,0],self.bar_center[:,1],self.bar_center[:,0],self.flux_list[0],self.flux_list[1]))
-        detection_dataframe=pd.DataFrame(detection_catalog,columns=['ra[deg]', 'dec[deg]','horizontal coor','vertical coor','vertical center','horizontal center','flux [K]','flux[Jy]'])
+        detection_catalog=np.column_stack((self.barycenter_list_world[:,1],self.barycenter_list_world[:,0],self.barycenter_list[:,1],self.barycenter_list[:,0],self.bar_center[:,1],self.bar_center[:,0],self.flux_list[2],self.flux_list[0],self.flux_list[1],self.global_stat[1]*np.ones(len(self.bar_center[:,1]))))
+        detection_dataframe=pd.DataFrame(detection_catalog,columns=['dec[deg]','ra[deg]','horizontal coor','vertical coor','vertical center','horizontal center','amp [K]','flux [K]','flux[Jy]','global bg std [K]'])
         sorter=np.flip(np.argsort(detection_dataframe['dec[deg]']))
         self.sorted_detection_dataframe = detection_dataframe.iloc[sorter]
+
+
+    def set_max_distance(self,max_distance):
+        self.max_distance=max_distance
+
+
+    def set_matching_aperture(self,matching_aperture):
+        self.matching_aperture=matching_aperture
+
         
+
         
-        
+    def matching(self): 
 
         self.matching_results = cross_matching.cross_matching(self.sorted_detection_dataframe[['ra[deg]', 'dec[deg]', 'flux[Jy]']], self.simulation[1][['ra[deg]', 'dec[deg]', 'flux[Jy]']],self.matching_aperture,self.max_distance)
 
@@ -323,3 +339,32 @@ class src_finder:
         else:
             self.spurious_detection = ( len(self.sorted_detection_dataframe)- len(self.matching_results[0]) )/len(self.sorted_detection_dataframe)
         
+
+
+
+    def plot_bg_estimation(self, rectmap, global_stat):
+
+        plt.figure(figsize=[24, 18])
+        plt.subplot(221)
+        plt.imshow(self.rectmap)
+        plt.colorbar()
+
+        plt.subplot(222)
+        plt.hist(np.reshape(self.rectmap,len(self.rectmap)**2))
+        plt.axvline(np.std(self.rectmap), color='k', linestyle='dashed', linewidth=1, label='std={}'.format(np.std(self.rectmap)))
+        plt.legend()
+ 
+
+        plt.subplot(223)
+        plt.imshow(self.global_stat[2])
+        plt.colorbar()
+
+        plt.subplot(224)
+        plt.hist(np.reshape(self.global_stat[2],len(self.rectmap)**2))
+        plt.axvline(self.global_stat[1], color='k', linestyle='dashed', linewidth=1, label='std={}'.format(self.global_stat[1]))
+        plt.legend()
+        plt.show()
+
+
+
+
