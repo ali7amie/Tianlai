@@ -31,11 +31,11 @@ def jansky2k(use,freq,max_baseline,beam_surface,density_jansky):
     c=3*10**8
     lambdaa=c/freq
     if use=='freq':
-        density_k=density_jansky*lambdaa**2/(2*scipy.constants.Boltzmann*(lambdaa/max_baseline)**2)
+        density_k=density_jansky*10**(-26)*lambdaa**2/(2*scipy.constants.Boltzmann*(lambdaa/max_baseline)**2)
         return density_k
 
     if use=='surface':
-        density_k=density_jansky*lambdaa**2/(2*scipy.constants.Boltzmann*beam_surface)
+        density_k=density_jansky*10**(-26)*lambdaa**2/(2*scipy.constants.Boltzmann*beam_surface)
         return density_k
 
         
